@@ -276,6 +276,13 @@ function build3DGraph() {
         let y = cy + radius * Math.sin(i * angleStep);
         state.nodePositions[n] = { x, y };
 
+        // Dynamic Font Sizing for long names (like cities)
+        const nameLen = n.length;
+        let fontSizeClass = 'text-2xl';
+        if (nameLen > 10) fontSizeClass = 'text-[10px] px-1';
+        else if (nameLen > 6) fontSizeClass = 'text-xs px-2';
+        else if (nameLen > 4) fontSizeClass = 'text-sm px-2';
+        
         // Node Container -> we place a 3D generic cube structure
         let div = document.createElement('div');
         div.className = 'absolute z-10';
@@ -286,7 +293,7 @@ function build3DGraph() {
         div.innerHTML = `
             <div class="scene" style="transform: scale(0.6);">
                 <div class="cube" id="node-${n}">
-                    <div class="cube__face cube__face--front flex items-center justify-center font-black text-2xl text-cyber-blue bg-black/80 border border-cyber-blue">${n}</div>
+                    <div class="cube__face cube__face--front flex items-center justify-center font-black ${fontSizeClass} text-center overflow-hidden break-all text-cyber-blue bg-black/80 border border-cyber-blue">${n}</div>
                     <div class="cube__face cube__face--right bg-black/80 border border-cyber-blue/50"></div>
                     <div class="cube__face cube__face--back bg-black/80 border border-cyber-blue/50"></div>
                     <div class="cube__face cube__face--left bg-black/80 border border-cyber-blue/50"></div>
