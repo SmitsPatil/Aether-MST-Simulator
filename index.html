@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Aether 3D | MST Simulator</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            blue:  "#00f2fe",
+                            green: "#00ff88",
+                            red:   "#ff3366",
+                            dark:  "#0b0f19",
+                            glass: "rgba(16, 24, 39, 0.6)",
+                            gold:  "#ffcc00"
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#0b0f19] text-white selection:bg-cyber-blue selection:text-black min-h-screen lg:h-[100dvh] w-full lg:overflow-hidden flex flex-col m-0 p-0 overflow-x-hidden">
+
+    <!-- TopNavBar -->
+    <header class="z-50 glass-box border-none rounded-none flex shrink-0 justify-between items-center px-4 md:px-10 w-full border-b border-white/10 h-16">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyber-blue to-blue-600 text-white flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.5)]">
+                <span class="material-symbols-outlined text-2xl">account_tree</span>
+            </div>
+            <span class="text-2xl font-black tracking-tighter cyber-text uppercase tracking-[0.2em]">Aether <span class="text-white">MST</span></span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="help-btn" class="material-symbols-outlined text-white/70 hover:text-cyber-blue p-2 rounded-full transition-all hover:scale-110 hover:shadow-[0_0_10px_rgba(0,242,254,0.4)]" title="How to use">help</button>
+            <button id="mobile-menu-btn" class="md:hidden material-symbols-outlined text-white/70 hover:text-cyber-blue p-2 rounded-full transition-all">menu</button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 w-full lg:overflow-hidden relative min-h-0 min-w-0">
+        <!-- SideNavBar -->
+        <aside id="sidebar" class="absolute md:static left-0 top-0 h-full z-40 flex flex-col glass-box rounded-none border-r border-y-0 border-l-0 border-white/10 w-64 shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="p-6 pb-4 border-b border-white/10">
+                <p class="text-[10px] uppercase tracking-widest font-black text-cyber-blue mb-1">Terminal</p>
+            </div>
+            <nav class="flex-1 flex flex-col px-4 gap-4 mt-6" id="nav-menu">
+                <button data-target="view-simulator" class="nav-btn flex items-center gap-4 px-5 py-4 bg-white/10 rounded-xl font-bold text-sm text-white shadow-[0_0_15px_rgba(0,242,254,0.2)] border border-cyber-blue/50 transition-all active">
+                    <span class="material-symbols-outlined" data-icon="3d_rotation">3d_rotation</span>
+                    3D Map
+                </button>
+                <button data-target="view-comparison" class="nav-btn flex items-center gap-4 px-5 py-4 hover:bg-white/5 rounded-xl font-bold text-sm text-white/70 transition-all border border-transparent">
+                    <span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+                    Benchmarks
+                </button>
+                <button data-target="view-history" class="nav-btn flex items-center gap-4 px-5 py-4 hover:bg-white/5 rounded-xl font-bold text-sm text-white/70 transition-all border border-transparent">
+                    <span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+                    Trace Log
+                </button>
+            </nav>
+
+            <!-- Premise Mode Selector -->
+            <div class="px-4 pb-6 mt-auto border-t border-white/10 pt-4">
+                <p class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-2">Real-World Context</p>
+                <select id="premise-mode" class="w-full bg-black/60 text-[10px] font-bold uppercase tracking-wider text-white border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-cyber-blue cursor-pointer">
+                    <option value="abstract">🔬 Abstract (Default)</option>
+                    <option value="cities">🏙️ City Road Network</option>
+                    <option value="router">🌐 Internet Routing</option>
+                    <option value="power">⚡ Power Grid</option>
+                </select>
+                <p id="premise-desc" class="mt-2 text-[9px] font-mono text-white/40 leading-relaxed">Nodes = Variables, Weights = Cost</p>
+            </div>
+        </aside>
+
+        <!-- Main Container -->
+        <main class="flex-1 relative overflow-hidden flex flex-col min-h-0 min-w-0">
+            
+            <!-- ============================== -->
+            <!-- VIEW 1: 3D SIMULATOR -->
+            <!-- ============================== -->
+            <div id="view-simulator" class="view-content view-active flex-1 w-full lg:overflow-hidden px-4 md:px-6 relative min-h-0">
+                <div class="w-full max-w-7xl mx-auto lg:h-full flex flex-col gap-2 py-2 min-h-0">
+                    
+                    <section class="flex flex-col md:flex-row gap-4 shrink-0">
+                        <!-- Tracker Card -->
+                        <div class="flex-grow glass-box p-4 md:p-6 flex flex-col min-w-0 overflow-hidden">
+                            <div class="flex items-center justify-between mb-2 shrink-0">
+                                <span class="text-xs font-black uppercase tracking-widest text-white/80 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-cyber-blue animate-pulse"></span> Aether Data Stream</span>
+                                <span id="step-counter" class="text-xs font-black uppercase tracking-widest text-cyber-blue bg-cyber-blue/10 px-4 py-1.5 rounded-full border border-cyber-blue/30">Ready</span>
+                            </div>
+                            <div class="flex flex-col gap-2 no-scrollbar py-1 px-1 w-full text-xs font-mono text-white/70 overflow-y-auto relative h-[100px]" id="reference-string-container">
+                                <!-- Edge log gets built here as text stream -->
+                            </div>
+                        </div>
+                        
+                        <!-- Config Card -->
+                        <div class="w-full md:w-[320px] glass-box p-3 md:p-4 flex flex-col justify-center">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-white/80 block mb-1">Algorithm</label>
+                            <div class="flex bg-black/40 rounded-xl p-1 mb-2 border border-white/10" id="algorithm-selector">
+                                <button class="algo-btn flex-1 py-1 text-[9px] font-black uppercase rounded-lg transition-all algo-active" data-algo="Kruskal">Kruskal</button>
+                                <button class="algo-btn flex-1 py-1 text-[9px] font-black uppercase rounded-lg transition-all text-white/50 hover:text-white" data-algo="Prim">Prim</button>
+                            </div>
+                            
+                            <!-- Dynamic Options Container -->
+                            <div id="kruskal-options" class="flex items-center justify-between mb-2 pb-2 border-b border-white/5">
+                                <label class="text-[9px] font-black uppercase tracking-widest text-white/50">Edge Priority</label>
+                                <select id="kruskal-sort" class="bg-black/60 text-[9px] font-black uppercase tracking-widest text-white border border-white/10 rounded px-2 py-1 outline-none focus:border-cyber-blue">
+                                    <option value="asc">Ascending (Min Tree)</option>
+                                    <option value="desc">Descending (Max Tree)</option>
+                                </select>
+                            </div>
+
+                            <div id="prim-options" class="items-center justify-between mb-2 pb-2 border-b border-white/5 hidden">
+                                <label class="text-[9px] font-black uppercase tracking-widest text-white/50">Root Node</label>
+                                <input id="prim-start" type="text" placeholder="Random" class="w-24 bg-black/60 text-center text-[10px] font-black uppercase text-white border border-white/10 rounded px-1 py-1 outline-none focus:border-cyber-green placeholder-white/30" title="Leave blank for random start" />
+                            </div>
+
+                            <div class="flex gap-2 mt-1">
+                                <input id="ref-input" class="flex-grow bg-black/80 text-white placeholder-white/30 border border-cyber-blue/30 rounded-xl px-2 py-1.5 text-xs font-bold font-mono focus:outline-none focus:border-cyber-blue focus:ring-1 focus:ring-cyber-blue transition-all" value="A-B:4,A-C:8,B-C:2,B-D:5,C-D:5,C-E:9,D-E:4" type="text" placeholder="Edges (u-v:wt,...)" />
+                                <button id="apply-ref-btn" class="w-full md:w-auto bg-gradient-to-r from-cyber-blue to-blue-600 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase btn-3d shadow-[0_0_10px_rgba(0,242,254,0.3)]">Map</button>
+                            </div>
+                        </div>
+                    </section>
+    
+                    <section class="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 min-h-0 pb-4">
+                        <!-- TRUE 3D Canvas -->
+                        <div id="canvas-container" class="lg:col-span-8 glass-box relative flex-1 flex flex-col justify-center items-center border border-cyber-blue/30 shadow-[inset_0_0_50px_rgba(0,242,254,0.05)] border-t-4 border-t-cyber-blue min-w-0 overflow-hidden">
+                            <div id="status-indicator" class="absolute top-4 px-8 py-2 rounded-full text-sm font-black tracking-widest text-black uppercase transform -translate-y-4 opacity-0 transition-all duration-300 shadow-[0_0_20px_rgba(0,255,136,0.6)] z-20">
+                                STATUS
+                            </div>
+                            
+                            <!-- SVG overlay for graph lines -->
+                            <svg id="edges-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
+
+                            <!-- Nodes will be absolute positioned here -->
+                            <div class="relative w-full h-full" id="frames-wrapper">
+                                <!-- Cubes appended here -->
+                            </div>
+                        </div>
+    
+                        <!-- Side Controls -->
+                        <div class="lg:col-span-4 h-full flex flex-col gap-4 overflow-y-auto no-scrollbar pb-10 md:pb-0">
+                            <div class="grid grid-cols-2 gap-4 shrink-0">
+                                <div class="glass-box p-4 border-t-4 border-t-cyber-green">
+                                    <p class="text-[10px] font-black uppercase tracking-widest text-cyber-green mb-1">MST Cost</p>
+                                    <p id="cost-counter" class="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]">0</p>
+                                </div>
+                                <div class="glass-box p-4 border-t-4 border-t-cyber-blue">
+                                    <p class="text-[10px] font-black uppercase tracking-widest text-cyber-blue mb-1">Tree Edges</p>
+                                    <p id="edges-counter" class="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(0,242,254,0.8)]">0</p>
+                                </div>
+                            </div>
+    
+                            <div class="glass-box p-6 flex-1 flex flex-col gap-6">
+                                <div>
+                                    <label class="text-[10px] font-black uppercase tracking-widest text-white/50 flex justify-between">
+                                        <span>Graph Build Speed</span>
+                                    </label>
+                                    <input id="speed-slider" class="w-full h-1.5 bg-black/50 rounded-lg appearance-none cursor-pointer mt-1.5 outline-none border border-white/10 accent-cyber-blue" max="2500" min="400" step="50" type="range" value="1450" />
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-2 shrink-0 md:mb-0 mb-4">
+                                    <button id="play-btn" class="flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-cyber-blue to-blue-700 text-white py-3 rounded-xl text-[10px] font-black uppercase btn-3d shadow-[0_0_15px_rgba(0,242,254,0.4)]">
+                                        <span class="material-symbols-outlined text-2xl">play_circle</span> PLAY
+                                    </button>
+                                    <button id="pause-btn" class="flex flex-col items-center justify-center gap-1 bg-black/60 border border-white/10 text-white/70 py-3 rounded-xl text-[10px] font-black uppercase btn-3d disabled:opacity-20" disabled>
+                                        <span class="material-symbols-outlined text-2xl">pause_circle</span> PAUSE
+                                    </button>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-2 mt-auto shrink-0">
+                                    <button id="step-btn" class="flex items-center justify-center gap-2 bg-white/10 text-white py-2.5 rounded-lg text-[10px] font-black uppercase hover:bg-white/20 transition-colors btn-3d border border-white/10">
+                                        <span class="material-symbols-outlined text-base">skip_next</span> Step
+                                    </button>
+                                    <button id="reset-btn" class="bg-cyber-red/20 text-cyber-red py-2.5 rounded-lg border border-cyber-red/50 hover:bg-cyber-red hover:text-white transition-colors btn-3d font-black uppercase text-[10px] flex items-center justify-center gap-2" title="Reset Simulation">
+                                        <span class="material-symbols-outlined text-base">power_settings_new</span> Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            
+            <!-- ============================== -->
+            <!-- VIEW 2: COMPARISON MODE        -->
+            <!-- ============================== -->
+            <div id="view-comparison" class="view-content flex-1 w-full overflow-y-auto no-scrollbar px-4 py-4 md:px-6 md:py-6 pb-12 relative min-h-0">
+                <div class="max-w-7xl mx-auto flex flex-col gap-6 w-full min-h-0">
+                    <div class="flex justify-between items-end shrink-0">
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-black tracking-tight uppercase cyber-text">Benchmarks</h1>
+                            <p class="text-white/80 text-xs font-mono mt-1">Comparison between Kruskal's & Prim's run properties.</p>
+                        </div>
+                    </div>
+    
+                    <!-- Network Intelligence Stats -->
+                    <div id="net-stats-container" class="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+                        <div class="glass-box p-4 border-t-2 border-t-cyber-blue text-center">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Nodes</p>
+                            <p id="stat-nodes" class="text-2xl font-black text-cyber-blue">-</p>
+                        </div>
+                        <div class="glass-box p-4 border-t-2 border-t-cyber-green text-center">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Edges</p>
+                            <p id="stat-edges" class="text-2xl font-black text-cyber-green">-</p>
+                        </div>
+                        <div class="glass-box p-4 border-t-2 border-t-yellow-400 text-center">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Density</p>
+                            <p id="stat-density" class="text-2xl font-black text-yellow-400">-</p>
+                        </div>
+                        <div id="stat-connectivity-card" class="glass-box p-4 border-t-2 border-t-white/20 text-center">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Connected</p>
+                            <p id="stat-connected" class="text-2xl font-black text-white">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Warnings -->
+                    <div id="net-warnings" class="hidden"></div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0" id="bento-container">
+                        <!-- Populated via JS -->
+                    </div>
+    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
+                        <div id="winner-badge" class="md:col-span-1 bg-gradient-to-br from-cyber-blue to-blue-700 p-6 rounded-xl text-white shadow-[0_0_30px_rgba(0,242,254,0.3)] flex flex-col items-center justify-center text-center">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-white/70">Algorithm Verified</span>
+                            <h3 id="winner-name" class="text-3xl font-black mt-2 drop-shadow-lg">Matches</h3>
+                            <span class="material-symbols-outlined text-4xl mt-3 text-white/20">memory</span>
+                        </div>
+                        
+                        <div class="md:col-span-3 flex flex-col gap-4">
+                            <div class="glass-box rounded-xl border border-white/10 p-6 flex flex-col overflow-x-auto">
+                                <h4 class="text-sm font-black uppercase tracking-widest text-cyber-blue mb-2 border-b border-white/10 pb-2">Analysis Matrix</h4>
+                                <table class="w-full text-left border-collapse mt-4">
+                                    <thead class="text-xs font-black uppercase tracking-widest text-white/70">
+                                        <tr>
+                                            <th class="pb-2">Metric</th>
+                                            <th class="pb-2 text-center text-cyber-blue">Kruskal's</th>
+                                            <th class="pb-2 text-center text-cyber-green">Prim's</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="compare-tbody" class="divide-y divide-white/10 text-sm font-mono tracking-widest">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Performance Chart -->
+                            <div class="glass-box rounded-xl border border-white/10 p-6">
+                                <h4 class="text-sm font-black uppercase tracking-widest text-cyber-blue mb-4 border-b border-white/10 pb-2">MST Cost Progression</h4>
+                                <div class="relative h-48">
+                                    <canvas id="perf-chart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Narrative Summary Box -->
+                            <div class="glass-box rounded-xl border border-cyber-blue/30 p-6 shadow-[inset_0_0_20px_rgba(0,242,254,0.05)]">
+                                <h4 class="text-sm font-black uppercase tracking-widest text-cyber-green mb-2 border-b border-white/10 pb-2">Execution Conclusion</h4>
+                                <p id="benchmark-summary" class="mt-4 text-sm font-mono text-white/80 leading-relaxed tracking-wide">
+                                    <!-- Populated dynamically by JS -->
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================== -->
+            <!-- VIEW 3: TRACE LOG              -->
+            <!-- ============================== -->
+            <div id="view-history" class="view-content flex-1 w-full overflow-y-auto no-scrollbar px-4 py-4 md:px-6 md:py-6 pb-12 relative min-h-0">
+                <div class="max-w-7xl mx-auto flex flex-col w-full gap-8 min-h-0">
+                    <section class="flex justify-between items-end shrink-0">
+                        <div>
+                            <h1 class="text-5xl font-black tracking-tight uppercase cyber-text">Trace Log</h1>
+                            <p class="text-white/50 text-sm font-mono mt-2">Verbose edge evaluation dumps during tick events.</p>
+                        </div>
+                        <div class="glass-box px-6 py-3 font-black text-sm uppercase flex items-center gap-3">
+                            <span class="w-3 h-3 bg-cyber-blue rounded-full animate-pulse"></span>
+                            Active Env: <span id="trace-algo-label" class="text-cyber-blue">Kruskal</span>
+                        </div>
+                    </section>
+    
+                    <div class="flex-1 glass-box rounded-2xl border border-white/10 overflow-auto w-full relative">
+                        <table class="w-full text-left border-collapse min-w-[600px]" id="trace-table">
+                            <thead class="bg-black/80 sticky top-0 z-10 border-b border-white/10">
+                                <tr>
+                                    <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/70">Step</th>
+                                    <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/70">Evaluated Edge</th>
+                                    <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/70">Weight</th>
+                                    <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/70">Action</th>
+                                    <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/70">Current MST Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trace-tbody" class="divide-y divide-white/10 text-sm font-mono">
+                                <!-- Populated with JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="glass-box p-10 max-w-lg w-full transform scale-95 transition-transform duration-300 border-2 border-cyber-blue/30" id="help-modal-content">
+            <div class="flex justify-between items-start mb-8">
+                <h2 class="text-3xl font-black uppercase cyber-text">Simulator Controls</h2>
+                <button id="close-modal-btn" class="material-symbols-outlined text-white/50 hover:text-cyber-red transition-all text-3xl">close</button>
+            </div>
+            <div class="space-y-6 text-sm text-white/70 font-mono tracking-wide">
+                <p><span class="text-cyber-blue font-black">> </span><b>Initialize:</b> Input graph edges in "u-v:w" format separated by commas (e.g. A-B:5, A-C:1).</p>
+                <p><span class="text-cyber-blue font-black">> </span><b>Select:</b> Toggle Kruskal's or Prim's algorithm.</p>
+                <p><span class="text-cyber-blue font-black">> </span><b>Execute:</b> Press PLAY to watch the tree build step-by-step.</p>
+                <p><span class="text-cyber-blue font-black">> </span><b>Analyze:</b> Check Benchmarks or Trace Logs upon completion.</p>
+            </div>
+            <button id="got-it-btn" class="mt-10 w-full bg-cyber-blue text-black font-black py-4 rounded-xl hover:bg-white transition-all uppercase tracking-widest">Acknowledge</button>
+        </div>
+    </div>
+
+    <!-- Graph Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] hidden items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="glass-box p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 border-2 border-cyber-red/50 shadow-[0_0_40px_rgba(255,51,102,0.3)]" id="error-modal-content">
+            <div class="flex items-start gap-4 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-cyber-red/20 border border-cyber-red/50 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-cyber-red text-2xl">error</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black uppercase text-cyber-red tracking-widest">Graph Error</h2>
+                    <p class="text-white/50 text-xs font-mono mt-1">Simulation aborted</p>
+                </div>
+            </div>
+            <div class="bg-black/50 rounded-xl p-4 border border-cyber-red/20 mb-6">
+                <p id="error-modal-msg" class="text-sm font-mono text-white/80 leading-relaxed"></p>
+            </div>
+            <div id="error-modal-detail" class="text-xs font-mono text-white/40 mb-6 leading-relaxed"></div>
+            <button id="error-close-btn" class="w-full bg-cyber-red/20 border border-cyber-red/50 text-cyber-red font-black py-3 rounded-xl hover:bg-cyber-red hover:text-white transition-all uppercase tracking-widest text-sm">Dismiss & Fix Graph</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
